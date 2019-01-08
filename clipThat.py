@@ -48,77 +48,24 @@ def validateTime(inputTime):
     if(numTimeArgs == 2):
         # must be MM:SS.m
         if('.' in timeSplit[1]):
-            if(validateMinutes(timeSplit[0]) and validateSeconds(timeSplit[1])):
-                print("MM:SS.m")
-                outTime = datetime.strptime(inputTime, "%M:%S.%f")
-            else:
-                raise ValueError("Invalid time format")
+            print("MM:SS.m")
+            outTime = datetime.strptime(inputTime, "%M:%S.%f")
         # must be MM:SS
         else:
-            if(validateMinutes(timeSplit[0]) and validateSeconds(timeSplit[1])):
-                print("MM:SS")
-                outTime = datetime.strptime(inputTime, "%M:%S")
-            else:
-                raise ValueError("Invalid time format")
+            print("MM:SS")
+            outTime = datetime.strptime(inputTime, "%M:%S")
     # could be HH:MM:SS.m or HH:MM:SS
     else:
         # must be HH:MM:SS.m
         if('.' in timeSplit[2]):
-            if(validateHours(timeSplit[0]) and validateMinutes(timeSplit[1]) and validateSeconds(timeSplit[2])):
-                print("HH:MM:SS.m")
-                outTime = datetime.strptime(inputTime, "%H:%M:%S.%f")
-            else:
-                raise ValueError("Invalid time format")
+            print("HH:MM:SS.m")
+            outTime = datetime.strptime(inputTime, "%H:%M:%S.%f")
         # must be HH:MM:SS
         else:
-            if(validateHours(timeSplit[0]) and validateMinutes(timeSplit[1]) and validateSeconds(timeSplit[2])):
-                print("HH:MM:SS")
-                outTime = datetime.strptime(inputTime, "%H:%M:%S")
-            else:
-                raise ValueError("Invalid time format")
+            print("HH:MM:SS")
+            outTime = datetime.strptime(inputTime, "%H:%M:%S")
 
     return outTime
-
-
-def validateHours(hoursString):
-    validHours = True
-    try:
-        hours = int(hoursString)
-        if(hours > 23 or hours < 0):
-            validHours = False
-    except ValueError:
-        validHours = False
-
-    return validHours
-
-def validateMinutes(minutesString):
-    validMinutes = True
-    try:
-        minutes = int(minutesString)
-        if(minutes > 59 or minutes < 0):
-            validMinutes = False
-    except ValueError:
-        validMinutes = False
-
-    return validMinutes
-
-def validateSeconds(secondsString):
-    validSeconds = True
-    try:
-        seconds = float(secondsString)
-        if(seconds >= 60 or  seconds < 0):
-            validSeconds = False
-    except ValueError:
-        validSeconds = False
-
-    return validSeconds
-    
-
-
-
-    
-
-   
 
 # constants and python main thing
 WORDS_FILENAME = "words.txt"    #file containing list of password "words"
