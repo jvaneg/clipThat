@@ -40,8 +40,6 @@ def main(args):
             print("Not overwriting - exiting")
             exit(-1)
 
-    vidTools.getVideoDuration(args.source)
-
     if(args.savelocal == None):
         localOutput = "tmp.mp4"
     else:
@@ -55,7 +53,6 @@ def main(args):
 
     try: 
         vidTools.cutVideo(args.source, args.start, str(timeDelta), tmpOutput)
-        vidTools.getVideoDuration(tmpOutput)
     except Exception as error:
         print("Error: {}".format(error.args[0]))
         shutil.rmtree(tmpDir)
