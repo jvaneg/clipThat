@@ -1,18 +1,19 @@
 import sys
 import os.path
-
 import argparse
 from datetime import datetime
 import shutil
+import json
 
 import vidTools
+import gfycatAPI
+
+# Constants
+TEMP_DIRECTORY = ".tmp/"
+TEMP_FILE = "tmp.mp4"
+AUTH_FILE = "auth.json"
 
 def main(args):
-    print(args.source)
-    print(args.start)
-    print(args.end)
-    print(args.savelocal)
-    print(args.nogfy)
 
     if(args.nogfy and (args.savelocal == None)):
         print("Error: Must set --savelocal to use -nogfy option")
@@ -41,11 +42,11 @@ def main(args):
             exit(-1)
 
     if(args.savelocal == None):
-        localOutput = "tmp.mp4"
+        localOutput = TEMP_FILE
     else:
         localOutput = args.savelocal
 
-    tmpDir = os.path.join(os.path.abspath(os.path.dirname(__file__)), ".tmp/")
+    tmpDir = os.path.join(os.path.abspath(os.path.dirname(__file__)), TEMP_DIRECTORY)
 
     if(not os.path.exists(tmpDir)):
         os.mkdir(tmpDir)
@@ -61,12 +62,40 @@ def main(args):
     if(args.savelocal != None):
         shutil.copy(tmpOutput, localOutput)
 
-    #upload to gfycat will happen here
+    if(not args.nogfy):
+        try:
+            if(not os.path.isfile(AUTH_FILE)):
+                raise Exception("Authentication file \"{}\" is missing.".format(AUTH_FILE))
+
+            with open(AUTH_FILE) as authFile:
+                authData = json.load(authFile)
+                clientID = authData["gfycat"]["client_id"]
+                clientSecret = authData["gfycat"]["client_secret"]
+                username = authData["gfycat"]["username"]
+                password = authData["gfycat"]["password"]
+
+            if(args.anon):
+                accessToken = gfycatAPI.getAccessTokenAnon(clientID,clientSecret)
+            else:
+                accessToken = gfycatAPI.getAccessTokenUser(clientID,clientSecret,username,password)
+
+            gfyURL = gfycatAPI.uploadFile(accessToken, tmpOutput)
+
+        except Exception as error:
+            print("Error: {}".format(error.args[0]))
+            shutil.rmtree(tmpDir)
+            exit(-1)
 
     shutil.rmtree(tmpDir)
+
+    if(not args.nogfy):
+        print("Upload successful!\nAvailable at: {}".format(gfyURL))
+    
+    if(args.savelocal != None):
+        print("Local copy at: {}".format(localOutput))
     
 
-
+    
 def validateTimes(start, end, sourceDuration):
     try:
         startTime = validateTimeFormat(start)
@@ -119,8 +148,6 @@ def validateTimeFormat(inputTime):
     return outTime
 
 
-# constants and python main thing
-
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("source", help="the source video")
@@ -128,6 +155,7 @@ if __name__ == "__main__":
     parser.add_argument("end", help="the end time of the clip, in [HH:]MM:SS[.m...] format")
     parser.add_argument("-sl", "--savelocal", metavar="[output filename]", help="save a local copy of the clip")
     parser.add_argument("-nogfy", action="store_true", help="don't upload to gfycat")
+    parser.add_argument("-a", "--anon", action="store_true", help="upload anonymously")
 
     args = parser.parse_args()
     main(args)

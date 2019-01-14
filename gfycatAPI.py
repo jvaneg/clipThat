@@ -71,10 +71,10 @@ def uploadFile(accessToken, fileName):
         fileResponse = requests.put("{}/{}".format(URL_UPLOAD,gfyname), fileUpload)
 
     #check if fileresponse is 200
+    if(fileResponse.status_code != 200):
+        raise Exception("Problem uploading to gfycat filedrop")
 
     waitForUpload(gfyname)
-
-    print("Upload successful!\nAvailable at: {}/{}".format(URL_GFY,gfyname))
 
     return "{}/{}".format(URL_GFY,gfyname)
 
