@@ -4,6 +4,7 @@ import argparse
 from datetime import datetime
 import shutil
 import json
+from pathlib import Path
 
 import vidTools
 import gfycatAPI
@@ -50,7 +51,7 @@ def main(args):
 
     if(not os.path.exists(tmpDir)):
         os.mkdir(tmpDir)
-    tmpOutput = os.path.join(tmpDir, localOutput)
+    tmpOutput = os.path.join(tmpDir, Path(localOutput).name)
 
     try: 
         vidTools.cutVideo(args.source, args.start, str(timeDelta), tmpOutput)
