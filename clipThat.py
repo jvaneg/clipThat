@@ -1,5 +1,3 @@
-import sys
-import os.path
 import argparse
 from datetime import datetime
 import shutil
@@ -10,9 +8,9 @@ import vidTools
 import gfycatAPI
 
 # Constants
-TEMP_DIRECTORY = ".tmp/"
-TEMP_FILE = "tmp.mp4"
-AUTH_FILE = "auth.json"
+TEMP_DIRECTORY = Path(".tmp")
+TEMP_FILE = Path("tmp.mp4")
+AUTH_FILE = Path("auth.json")
 
 def main(args):
 
@@ -20,7 +18,7 @@ def main(args):
         print("Error: Must set --savelocal to use -nogfy option")
         exit(-1)
 
-    if(not os.path.isfile(args.source)):
+    if(not Path(args.source).is_file()):
         print("Error: Source file \"{}\" does not exist".format(args.source))
         exit(-1)
 
@@ -35,26 +33,30 @@ def main(args):
         print("Error: Clip too long - gfycat only supports maximum 60 second clips")
         exit(-1)
 
-    if(args.savelocal != None and os.path.isfile(args.savelocal)):
+    if(args.savelocal != None and Path(args.savelocal).is_file()):
         print("Output file \"{}\" already exists. Overwrite? [y/n]".format(args.savelocal))
         overwriteResp = input()
         if('y' not in overwriteResp.lower()):
             print("Not overwriting - exiting")
             exit(-1)
 
+
     if(args.savelocal == None):
         localOutput = TEMP_FILE
     else:
-        localOutput = args.savelocal
+        localOutput = Path(args.savelocal)
 
-    tmpDir = os.path.join(os.path.abspath(os.path.dirname(__file__)), TEMP_DIRECTORY)
+    tmpDir = Path(__file__).parent.joinpath(TEMP_DIRECTORY)
 
-    if(not os.path.exists(tmpDir)):
-        os.mkdir(tmpDir)
-    tmpOutput = os.path.join(tmpDir, Path(localOutput).name)
+    if(not tmpDir.is_dir()):
+        tmpDir.mkdir(parents=True)
+    tmpOutput = tmpDir.joinpath(localOutput.name)
+
+    if(args.savelocal != None and not localOutput.parent.is_dir()):
+            localOutput.parent.mkdir(parents=True)
 
     try: 
-        vidTools.cutVideo(args.source, args.start, str(timeDelta), tmpOutput)
+        vidTools.cutVideo(args.source, args.start, str(timeDelta), str(tmpOutput))
     except Exception as error:
         print("Error: {}".format(error.args[0]))
         shutil.rmtree(tmpDir)
@@ -65,10 +67,10 @@ def main(args):
 
     if(not args.nogfy):
         try:
-            if(not os.path.isfile(AUTH_FILE)):
+            if(not AUTH_FILE.is_file()):
                 raise Exception("Authentication file \"{}\" is missing.".format(AUTH_FILE))
 
-            with open(AUTH_FILE) as authFile:
+            with AUTH_FILE.open() as authFile:
                 authData = json.load(authFile)
                 clientID = authData["gfycat"]["client_id"]
                 clientSecret = authData["gfycat"]["client_secret"]
@@ -80,7 +82,7 @@ def main(args):
             else:
                 accessToken = gfycatAPI.getAccessTokenUser(clientID,clientSecret,username,password)
 
-            gfyURL = gfycatAPI.uploadFile(accessToken, tmpOutput)
+            gfyURL, directURL = gfycatAPI.uploadFile(accessToken, str(tmpOutput))
 
         except Exception as error:
             print("Error: {}".format(error.args[0]))
@@ -90,10 +92,12 @@ def main(args):
     shutil.rmtree(tmpDir)
 
     if(not args.nogfy):
-        print("Upload successful!\nAvailable at: {}".format(gfyURL))
+        print("Upload successful!")
+        print("Available at:\t{}".format(gfyURL))
+        print("Direct link at:\t{}".format(directURL))
     
     if(args.savelocal != None):
-        print("Local copy at: {}".format(localOutput))
+        print("Local copy at:\t{}".format(localOutput.absolute()))
     
 
     

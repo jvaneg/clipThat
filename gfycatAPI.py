@@ -1,5 +1,5 @@
 import requests
-import os
+from pathlib import Path
 import time
 from progress.spinner import Spinner
 
@@ -10,6 +10,7 @@ URL_UPLOAD = "https://filedrop.gfycat.com"
 URL_API_CREATE_GFY = URL_API + "/gfycats"
 URL_UPLOAD_STATUS = URL_API_CREATE_GFY + "/fetch/status"
 URL_GFY = "https://gfycat.com"
+URL_GFY_DIRECT = "https://giant.gfycat.com"
 
 
 def getAccessTokenAnon(client_id, client_secret):
@@ -63,11 +64,11 @@ def uploadFile(accessToken, fileName):
 
     gfyname = responseJson["gfyname"]
 
-    newFile = os.path.join(os.path.abspath(os.path.dirname(fileName)), gfyname)
-    os.rename(fileName, newFile)
+    inputFile = Path(fileName)
+    newFile = inputFile.parent.joinpath(gfyname)
+    inputFile.rename(newFile)
 
-    
-    with open(newFile, "rb") as fileUpload:
+    with newFile.open(mode="rb") as fileUpload:
         fileResponse = requests.put("{}/{}".format(URL_UPLOAD,gfyname), fileUpload)
 
     #check if fileresponse is 200
@@ -76,7 +77,10 @@ def uploadFile(accessToken, fileName):
 
     waitForUpload(gfyname)
 
-    return "{}/{}".format(URL_GFY,gfyname)
+    gfyURL = "{}/{}".format(URL_GFY,gfyname)
+    directURL = "{}/{}.webm".format(URL_GFY_DIRECT,gfyname)
+
+    return gfyURL, directURL
 
 
 def waitForUpload(gfyname):
