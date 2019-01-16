@@ -1,8 +1,8 @@
 import argparse
 from datetime import datetime
 import shutil
-import json
 from pathlib import Path
+import toml
 
 import vidTools
 import gfycatAPI
@@ -10,7 +10,7 @@ import gfycatAPI
 # Constants
 TEMP_DIRECTORY = Path(".tmp")
 TEMP_FILE = Path("tmp.mp4")
-AUTH_FILE = Path("auth.json")
+AUTH_FILE = Path("config.cfg")
 
 def main(args):
 
@@ -71,11 +71,11 @@ def main(args):
                 raise Exception("Authentication file \"{}\" is missing.".format(AUTH_FILE))
 
             with AUTH_FILE.open() as authFile:
-                authData = json.load(authFile)
-                clientID = authData["gfycat"]["client_id"]
-                clientSecret = authData["gfycat"]["client_secret"]
-                username = authData["gfycat"]["username"]
-                password = authData["gfycat"]["password"]
+                authData = toml.load(authFile)
+                clientID = authData["auth"]["gfycat"]["client_id"]
+                clientSecret = authData["auth"]["gfycat"]["client_secret"]
+                username = authData["auth"]["gfycat"]["username"]
+                password = authData["auth"]["gfycat"]["password"]
 
             if(args.anon):
                 accessToken = gfycatAPI.getAccessTokenAnon(clientID,clientSecret)

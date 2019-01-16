@@ -10,6 +10,7 @@ pylint = "*"
 ffmpeg-python = "*"
 requests = "*"
 progress = "*"
+toml = "*"
 
 [requires]
 python_version = "3.6"
