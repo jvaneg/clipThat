@@ -14,23 +14,10 @@ AUTH_FILE = Path("config.cfg")
 
 def main(args):
 
-    if(args.nogfy and (args.savelocal == None)):
-        print("Error: Must set --savelocal to use -nogfy option")
-        exit(-1)
-
-    if(not Path(args.source).is_file()):
-        print("Error: Source file \"{}\" does not exist".format(args.source))
-        exit(-1)
-
     try:
-        sourceDuration = vidTools.getVideoDuration(args.source)
-        timeDelta = validateTimes(args.start, args.end, sourceDuration)
-    except ValueError as error:
+        timeDelta = checkArgs(args)
+    except Exception as error:
         print("Error: {}".format(error.args[0]))
-        exit(-1)
-
-    if(not args.nogfy and timeDelta.total_seconds() > 60):
-        print("Error: Clip too long - gfycat only supports maximum 60 second clips")
         exit(-1)
 
     if(args.savelocal != None and Path(args.savelocal).is_file()):
@@ -40,20 +27,12 @@ def main(args):
             print("Not overwriting - exiting")
             exit(-1)
 
-
     if(args.savelocal == None):
         localOutput = TEMP_FILE
     else:
         localOutput = Path(args.savelocal)
 
-    tmpDir = Path(__file__).parent.joinpath(TEMP_DIRECTORY)
-
-    if(not tmpDir.is_dir()):
-        tmpDir.mkdir(parents=True)
-    tmpOutput = tmpDir.joinpath(localOutput.name)
-
-    if(args.savelocal != None and not localOutput.parent.is_dir()):
-            localOutput.parent.mkdir(parents=True)
+    tmpDir, tmpOutput = setupDirectories(localOutput)
 
     try: 
         vidTools.cutVideo(args.source, args.start, str(timeDelta), str(tmpOutput))
@@ -67,22 +46,10 @@ def main(args):
 
     if(not args.nogfy):
         try:
-            if(not AUTH_FILE.is_file()):
-                raise Exception("Authentication file \"{}\" is missing.".format(AUTH_FILE))
-
-            with AUTH_FILE.open() as authFile:
-                authData = toml.load(authFile)
-                clientID = authData["auth"]["gfycat"]["client_id"]
-                clientSecret = authData["auth"]["gfycat"]["client_secret"]
-                username = authData["auth"]["gfycat"]["username"]
-                password = authData["auth"]["gfycat"]["password"]
-
-            if(args.anon):
-                accessToken = gfycatAPI.getAccessTokenAnon(clientID,clientSecret)
-            else:
-                accessToken = gfycatAPI.getAccessTokenUser(clientID,clientSecret,username,password)
-
-            gfyURL, directURL = gfycatAPI.uploadFile(accessToken, str(tmpOutput))
+            gfyURL, directURL = uploadGfycat(AUTH_FILE,tmpOutput)
+            print("Upload successful!")
+            print("Available at:\t{}".format(gfyURL))
+            print("Direct link at:\t{}".format(directURL))
 
         except Exception as error:
             print("Error: {}".format(error.args[0]))
@@ -90,17 +57,27 @@ def main(args):
             exit(-1)
 
     shutil.rmtree(tmpDir)
-
-    if(not args.nogfy):
-        print("Upload successful!")
-        print("Available at:\t{}".format(gfyURL))
-        print("Direct link at:\t{}".format(directURL))
     
     if(args.savelocal != None):
         print("Local copy at:\t{}".format(localOutput.absolute()))
-    
 
+
+def checkArgs(args):
+    if(args.nogfy and (args.savelocal == None)):
+        raise Exception("Must set --savelocal to use -nogfy option")
+
+    if(not Path(args.source).is_file()):
+        raise Exception("Source file \"{}\" does not exist".format(args.source))
+
+    sourceDuration = vidTools.getVideoDuration(args.source)
+    timeDelta = validateTimes(args.start, args.end, sourceDuration)
     
+    if(not args.nogfy and timeDelta.total_seconds() > gfycatAPI.GFY_MAX_SECONDS):
+        raise Exception("Clip too long - gfycat only supports maximum {} second clips".format(gfycatAPI.GFY_MAX_SECONDS))
+
+    return timeDelta
+    
+   
 def validateTimes(start, end, sourceDuration):
     try:
         startTime = validateTimeFormat(start)
@@ -151,6 +128,40 @@ def validateTimeFormat(inputTime):
             outTime = datetime.strptime(inputTime, "%H:%M:%S")
 
     return outTime
+
+
+def setupDirectories(localOutput):
+    tmpDir = Path(__file__).parent.joinpath(TEMP_DIRECTORY)
+
+    if(not tmpDir.is_dir()):
+        tmpDir.mkdir(parents=True)
+    tmpOutput = tmpDir.joinpath(localOutput.name)
+
+    if(args.savelocal != None and not localOutput.parent.is_dir()):
+            localOutput.parent.mkdir(parents=True)
+
+    return tmpDir, tmpOutput
+
+
+def uploadGfycat(authFileName, uploadFileName):
+    if(not Path(authFileName).is_file()):
+        raise Exception("Config file \"{}\" is missing.".format(AUTH_FILE))
+
+    with Path(authFileName).open() as authFile:
+        authData = toml.load(authFile)
+        clientID = authData["auth"]["gfycat"]["client_id"]
+        clientSecret = authData["auth"]["gfycat"]["client_secret"]
+        username = authData["auth"]["gfycat"]["username"]
+        password = authData["auth"]["gfycat"]["password"]
+
+    if(args.anon):
+        accessToken = gfycatAPI.getAccessTokenAnon(clientID,clientSecret)
+    else:
+        accessToken = gfycatAPI.getAccessTokenUser(clientID,clientSecret,username,password)
+
+    gfyURL, directURL = gfycatAPI.uploadFile(accessToken, uploadFileName)
+
+    return gfyURL, directURL
 
 
 if __name__ == "__main__":

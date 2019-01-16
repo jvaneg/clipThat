@@ -12,6 +12,8 @@ URL_UPLOAD_STATUS = URL_API_CREATE_GFY + "/fetch/status"
 URL_GFY = "https://gfycat.com"
 URL_GFY_DIRECT = "https://giant.gfycat.com"
 
+GFY_MAX_SECONDS = 60
+
 
 def getAccessTokenAnon(client_id, client_secret):
 
